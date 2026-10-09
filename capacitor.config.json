@@ -1,0 +1,10 @@
+{
+  "appId": "app.lovable.mira",
+  "appName": "Mira",
+  "webDir": "dist/client",
+  "server": {
+    "url": "https://id-preview--874234d6-122a-4f65-967b-ae2b47e5ebb9.lovable.app",
+    "cleartext": false
+  },
+  "android": { "backgroundColor": "#1e0d1c" }
+}
