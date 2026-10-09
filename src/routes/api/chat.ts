@@ -5,7 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 const CHAT_MODEL = "google/gemini-3-flash-preview";
 const FACT_MODEL = "google/gemini-3.1-flash-lite";
-const IMAGE_MODEL = "lovable/image-fast";
+const IMAGE_MODEL = "openai/gpt-image-2.5-flare";
 
 const MIRA_LOOK =
   "Soft anime illustration of Mira, an original fictional young woman: long wavy brown hair with a lavender flower clip and purple ribbon, warm brown eyes, gentle shy smile, rosy cheeks, dreamy pink and lavender pastel atmosphere.";
