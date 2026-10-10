@@ -28,13 +28,23 @@ jobs:
             echo "WEB_DIR=build" >> $GITHUB_ENV
           fi
 
-      - name: Setup Capacitor & Android
+      - name: Setup Capacitor Offline
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
-          npx cap init Mira com.jyoti.mira --web-dir $WEB_DIR
+          rm -f capacitor.config.json capacitor.config.ts
+          cat <<EOF > capacitor.config.json
+          {
+            "appId": "com.jyoti.mira",
+            "appName": "Mira",
+            "webDir": "$WEB_DIR",
+            "bundledWebRuntime": false,
+            "server": {
+              "androidScheme": "https"
+            }
+          }
+          EOF
+          rm -rf android
           npx cap add android
-          mkdir -p android/app/src/main/assets
-          npx cap copy android
           npx cap sync android
 
       - name: Setup Java
