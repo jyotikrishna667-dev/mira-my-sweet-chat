@@ -22,16 +22,29 @@ jobs:
       - name: Build Web App
         run: |
           npm run build
-          # Nitro output ko Capacitor ke liye dist folder me copy karo
           mkdir -p dist
+          # Copy static assets
           if [ -d ".output/public" ]; then
             cp -r .output/public/* dist/
-          elif [ -d "dist" ]; then
-            echo "Already in dist"
-          elif [ -d "build" ]; then
-            cp -r build/* dist/
           fi
-          ls -la dist/
+          # Check if index.html exists, if not, generate root SPA loader
+          if [ ! -f "dist/index.html" ]; then
+            MAIN_JS=$(find dist -name "*.js" | head -n 1 | sed 's|dist/||')
+            cat <<EOF > dist/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+              <title>Mira</title>
+            </head>
+            <body>
+              <div id="root"></div>
+              <script type="module" src="/$MAIN_JS"></script>
+            </body>
+          </html>
+          EOF
+          fi
 
       - name: Setup Capacitor Offline
         run: |
