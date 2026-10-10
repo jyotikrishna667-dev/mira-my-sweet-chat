@@ -37,7 +37,7 @@ jobs:
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
           rm -f capacitor.config.ts capacitor.config.json
-          printf '{"appId":"com.jyoti.mira","appName":"Mira","webDir":"dist","server":{"androidScheme":"https"}}' > capacitor.config.json
+          printf '{"appId":"com.jyoti.mira","appName":"Mira","webDir":"dist","server":{"url":"https://mira-my-sweet-chat.lovable.app","cleartext":false}}' > capacitor.config.json
           rm -rf android
           npx cap add android
           npx cap sync android
