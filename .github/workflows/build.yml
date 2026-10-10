@@ -22,10 +22,11 @@ jobs:
       - name: Build Web App
         run: |
           npm run build
+          # Dono folders ensure karte hain taaki path ka koi issue na bache
           if [ -d "dist" ]; then
-            echo "WEB_DIR=dist" >> $GITHUB_ENV
-          else
-            echo "WEB_DIR=build" >> $GITHUB_ENV
+            cp -r dist build 2>/dev/null || true
+          elif [ -d "build" ]; then
+            cp -r build dist 2>/dev/null || true
           fi
 
       - name: Setup Capacitor Offline
@@ -36,7 +37,7 @@ jobs:
           {
             "appId": "com.jyoti.mira",
             "appName": "Mira",
-            "webDir": "$WEB_DIR",
+            "webDir": "dist",
             "bundledWebRuntime": false,
             "server": {
               "androidScheme": "https"
@@ -45,6 +46,7 @@ jobs:
           EOF
           rm -rf android
           npx cap add android
+          npx cap copy android
           npx cap sync android
 
       - name: Setup Java
