@@ -11,66 +11,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install Dependencies
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - name: Install
         run: npm install --legacy-peer-deps
 
-      - name: Build Web App
+      - name: Build web (SPA)
         run: |
           npm run build
-          mkdir -p dist
-          # Copy static assets
-          if [ -d ".output/public" ]; then
-            cp -r .output/public/* dist/
-          fi
-          # Check if index.html exists, if not, generate root SPA loader
-          if [ ! -f "dist/index.html" ]; then
-            MAIN_JS=$(find dist -name "*.js" | head -n 1 | sed 's|dist/||')
-            cat <<EOF > dist/index.html
-          <!DOCTYPE html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-              <title>Mira</title>
-            </head>
-            <body>
-              <div id="root"></div>
-              <script type="module" src="/$MAIN_JS"></script>
-            </body>
-          </html>
-          EOF
-          fi
+          rm -rf dist
+          mkdir dist
+          if [ -d ".output/public" ]; then cp -r .output/public/. dist/; fi
+          if [ ! -f dist/index.html ] && [ -f dist/_shell.html ]; then cp dist/_shell.html dist/index.html; fi
+          ls -la dist
+          test -f dist/index.html
 
-      - name: Setup Capacitor Offline
+      - name: Capacitor Android
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
-          rm -f capacitor.config.json capacitor.config.ts
-          cat <<EOF > capacitor.config.json
-          {
-            "appId": "com.jyoti.mira",
-            "appName": "Mira",
-            "webDir": "dist",
-            "bundledWebRuntime": false,
-            "server": {
-              "androidScheme": "https"
-            }
-          }
-          EOF
+          rm -f capacitor.config.ts capacitor.config.json
+          printf '{"appId":"com.jyoti.mira","appName":"Mira","webDir":"dist","server":{"androidScheme":"https"}}' > capacitor.config.json
           rm -rf android
           npx cap add android
-          npx cap copy android
           npx cap sync android
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '21'
 
       - name: Build APK
         run: |
@@ -78,9 +48,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: Mira-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          
