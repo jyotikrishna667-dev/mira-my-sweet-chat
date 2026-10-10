@@ -60,7 +60,7 @@ function ChatLayout() {
     navigate({ to: "/", replace: true });
   }
 
-  const name = (user.user_metadata?.full_name as string) || user.email?.split("@")[0] || "sweetu";
+  const name = (user.user_metadata?.['full_name'] as string) || user.email?.split("@")[0] || "sweetu";
 
   return (
     <SidebarCtx.Provider value={{ open: () => setOpen(true) }}>
@@ -85,7 +85,7 @@ function ChatLayout() {
             {groupByDate(convs).map((g) => (
               <div key={g.label} className="mb-3">
                 <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g.label}</p>
-                {g.items.map((c) => (
+                {(g.items ?? []).map((c) => (
                   <div key={c.id} className={`group flex items-center gap-1 rounded-xl px-2 ${params.id === c.id ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/60"}`}>
                     {editing === c.id ? (
                       <>
