@@ -40,10 +40,10 @@ export const Route = createFileRoute("/api/chat")({
       POST: async ({ request }) => {
         const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
         if (!token) return new Response("Unauthorized", { status: 401 });
-        const apiKey = process.env.LOVABLE_API_KEY;
+        const apiKey = process.env['LOVABLE_API_KEY'];
         if (!apiKey) return new Response("AI not configured", { status: 500 });
 
-        const sb = createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+        const sb = createClient<Database>(process.env['SUPABASE_URL']!, process.env['SUPABASE_PUBLISHABLE_KEY']!, {
           global: { headers: { Authorization: `Bearer ${token}` } },
           auth: { persistSession: false, autoRefreshToken: false },
         });
