@@ -14,18 +14,28 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Install & Build
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build Web App
         run: |
-          npm install --legacy-peer-deps
           npm run build
+          # Check folder name (dist or build)
+          if [ -d "dist" ]; then
+            echo "WEB_DIR=dist" >> $GITHUB_ENV
+          else
+            echo "WEB_DIR=build" >> $GITHUB_ENV
+          fi
 
-      - name: Setup Capacitor
+      - name: Setup Capacitor & Android
         run: |
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init Mira com.jyoti.mira --web-dir dist
+          npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
+          npx cap init Mira com.jyoti.mira --web-dir $WEB_DIR
           npx cap add android
+          mkdir -p android/app/src/main/assets
+          npx cap copy android
           npx cap sync android
 
       - name: Setup Java
