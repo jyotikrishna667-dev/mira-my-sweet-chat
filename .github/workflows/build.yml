@@ -22,7 +22,6 @@ jobs:
       - name: Build Web App
         run: |
           npm run build
-          # Check folder name (dist or build)
           if [ -d "dist" ]; then
             echo "WEB_DIR=dist" >> $GITHUB_ENV
           else
@@ -42,7 +41,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Build APK
         run: |
