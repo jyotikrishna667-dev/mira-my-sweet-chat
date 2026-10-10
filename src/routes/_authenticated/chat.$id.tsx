@@ -107,7 +107,7 @@ function ChatThread() {
 
   function speak(m: Msg) {
     const synth = window.speechSynthesis;
-    if (!synth) return toast.error("Voice playback isn't supported here");
+    if (!synth) { toast.error("Voice playback isn't supported here"); return; }
     if (speakingId === m.id) {
       synth.cancel();
       setSpeakingId(null);
@@ -134,7 +134,7 @@ function ChatThread() {
     }
     const w = window as unknown as { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any };
     const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-    if (!SR) return toast.error("Voice typing isn't supported in this browser. Try Chrome 💕");
+    if (!SR) { toast.error("Voice typing isn't supported in this browser. Try Chrome 💕"); return; }
     const rec = new SR();
     rec.lang = "en-IN";
     rec.interimResults = true;
@@ -166,7 +166,7 @@ function ChatThread() {
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
-    if (!f.type.startsWith("image/")) return toast.error("Please choose an image");
+    if (!f.type.startsWith("image/")) { toast.error("Please choose an image"); return; }
     try {
       setPendingImage(await compressImage(f));
     } catch {
