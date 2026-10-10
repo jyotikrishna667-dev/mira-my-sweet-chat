@@ -22,12 +22,16 @@ jobs:
       - name: Build Web App
         run: |
           npm run build
-          # Dono folders ensure karte hain taaki path ka koi issue na bache
-          if [ -d "dist" ]; then
-            cp -r dist build 2>/dev/null || true
+          # Nitro output ko Capacitor ke liye dist folder me copy karo
+          mkdir -p dist
+          if [ -d ".output/public" ]; then
+            cp -r .output/public/* dist/
+          elif [ -d "dist" ]; then
+            echo "Already in dist"
           elif [ -d "build" ]; then
-            cp -r build dist 2>/dev/null || true
+            cp -r build/* dist/
           fi
+          ls -la dist/
 
       - name: Setup Capacitor Offline
         run: |
