@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { compressImage, listMessages, type Msg } from "@/lib/mira-data";
 import { useSidebarCtx } from "@/lib/sidebar-ctx";
 import miraAvatar from "@/assets/mira-avatar.jpg";
+import { ChatImage } from "@/components/ChatImage";
 
 export const Route = createFileRoute("/_authenticated/chat/$id")({
   component: ChatThread,
@@ -274,7 +275,7 @@ function UserBubble({ m }: { m: Msg }) {
   return (
     <div className="flex justify-end">
       <div className="max-w-[80%] rounded-3xl rounded-br-lg bg-love px-4 py-2.5 text-primary-foreground">
-        {m.image_url && <img src={m.image_url} alt="Shared" className="mb-1 max-h-64 rounded-2xl object-cover" />}
+        {m.image_url && <ChatImage src={m.image_url} alt="Shared" className="max-h-64 rounded-2xl object-cover" />}
         {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
       </div>
     </div>
@@ -287,7 +288,7 @@ function MiraBubble({ m, speaking, onSpeak }: { m: Msg; speaking: boolean; onSpe
       <img src={miraAvatar} alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-full object-cover" />
       <div className="flex max-w-[82%] items-end gap-2 rounded-3xl rounded-bl-lg bg-bubble px-4 py-2.5">
         <div className="min-w-0">
-          {m.image_url && <img src={m.image_url} alt="Mira's selfie" className="mb-1 max-h-80 rounded-2xl object-cover" />}
+          {m.image_url && <ChatImage src={m.image_url} alt="Mira's selfie" className="max-h-80 rounded-2xl object-cover" />}
           {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
         </div>
         {onSpeak && m.content && (
