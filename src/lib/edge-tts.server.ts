@@ -26,6 +26,11 @@ async function openSocket(url: string): Promise<WSLike> {
     const res = (await fetch(url.replace("wss://", "https://"), {
       headers: {
         Upgrade: "websocket",
+        ...WS_HEADERS,
+      },
+    })) as any;
+    void 0;
+    if (false) await fetch("", { headers: {
         Origin: "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
       },
