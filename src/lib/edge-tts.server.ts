@@ -20,29 +20,28 @@ type WSLike = {
   addEventListener: (t: string, f: (e: any) => void) => void;
 };
 
+const WS_HEADERS = {
+  Origin: "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
+  Pragma: "no-cache",
+  "Cache-Control": "no-cache",
+};
+
 async function openSocket(url: string): Promise<WSLike> {
-  // Cloudflare Workers: outbound websocket via fetch upgrade (lets us set headers)
+  // Cloudflare Workers: outbound websocket via fetch upgrade (allows custom headers)
   try {
     const res = (await fetch(url.replace("wss://", "https://"), {
-      headers: {
-        Upgrade: "websocket",
-        ...WS_HEADERS,
-      },
-    })) as any;
-    void 0;
-    if (false) await fetch("", { headers: {
-        Origin: "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
-      },
+      headers: { Upgrade: "websocket", ...WS_HEADERS },
     })) as Response & { webSocket?: WSLike & { accept: () => void } };
     if (res.webSocket) {
       res.webSocket.accept();
       return res.webSocket;
     }
   } catch {
-    /* fall through */
+    /* fall through to standard WebSocket */
   }
-  const ws = new WebSocket(url);
+  const WS = WebSocket as unknown as new (u: string, o?: unknown) => WebSocket;
+  const ws = new WS(url, { headers: WS_HEADERS });
   ws.binaryType = "arraybuffer";
   await new Promise<void>((ok, bad) => {
     ws.addEventListener("open", () => ok());
