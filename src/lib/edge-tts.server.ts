@@ -1,6 +1,6 @@
 // Free Microsoft Edge "Read aloud" neural TTS over WebSocket.
 const TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-const CHROME_VER = "1-130.0.2849.68";
+const CHROME_VER = "1-143.0.3650.75";
 const BASE = "speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1";
 
 async function secMsGec(): Promise<string> {
@@ -22,16 +22,18 @@ type WSLike = {
 
 const WS_HEADERS = {
   Origin: "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold",
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
   Pragma: "no-cache",
   "Cache-Control": "no-cache",
+  "Accept-Language": "en-US,en;q=0.9",
 };
+const muid = () => [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
 
 async function openSocket(url: string): Promise<WSLike> {
   // Cloudflare Workers: outbound websocket via fetch upgrade (allows custom headers)
   try {
     const res = (await fetch(url.replace("wss://", "https://"), {
-      headers: { Upgrade: "websocket", ...WS_HEADERS },
+      headers: { Upgrade: "websocket", ...WS_HEADERS, Cookie: `muid=${muid()};` },
     })) as Response & { webSocket?: WSLike & { accept: () => void } };
     if (res.webSocket) {
       res.webSocket.accept();
@@ -41,7 +43,7 @@ async function openSocket(url: string): Promise<WSLike> {
     /* fall through to standard WebSocket */
   }
   const WS = WebSocket as unknown as new (u: string, o?: unknown) => WebSocket;
-  const ws = new WS(url, { headers: WS_HEADERS });
+  const ws = new WS(url, { headers: { ...WS_HEADERS, Cookie: `muid=${muid()};` } });
   ws.binaryType = "arraybuffer";
   await new Promise<void>((ok, bad) => {
     ws.addEventListener("open", () => ok());
