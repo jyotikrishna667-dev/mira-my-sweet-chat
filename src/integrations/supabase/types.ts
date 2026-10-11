@@ -112,6 +112,33 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_settings: {
+        Row: {
+          pitch: number
+          rate: number
+          updated_at: string
+          use_phone: boolean
+          user_id: string
+          voice: string
+        }
+        Insert: {
+          pitch?: number
+          rate?: number
+          updated_at?: string
+          use_phone?: boolean
+          user_id: string
+          voice?: string
+        }
+        Update: {
+          pitch?: number
+          rate?: number
+          updated_at?: string
+          use_phone?: boolean
+          user_id?: string
+          voice?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
