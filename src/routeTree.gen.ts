@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedChatIdRouteImport } from './routes/_authenticated/chat.$id'
 
@@ -35,6 +36,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTtsRoute = ApiTtsRouteImport.update({
+  id: '/api/tts',
+  path: '/api/tts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedChatIndexRoute = AuthenticatedChatIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -50,12 +56,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/api/tts': typeof ApiTtsRoute
   '/chat/$id': typeof AuthenticatedChatIdRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/tts': typeof ApiTtsRoute
   '/chat/$id': typeof AuthenticatedChatIdRoute
   '/chat': typeof AuthenticatedChatIndexRoute
 }
@@ -65,20 +73,22 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/api/tts': typeof ApiTtsRoute
   '/_authenticated/chat/$id': typeof AuthenticatedChatIdRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chat' | '/api/chat' | '/chat/$id' | '/chat/'
+  fullPaths: '/' | '/chat' | '/api/chat' | '/api/tts' | '/chat/$id' | '/chat/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat' | '/chat/$id' | '/chat'
+  to: '/' | '/api/chat' | '/api/tts' | '/chat/$id' | '/chat'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/_authenticated/chat'
     | '/api/chat'
+    | '/api/tts'
     | '/_authenticated/chat/$id'
     | '/_authenticated/chat/'
   fileRoutesById: FileRoutesById
@@ -87,6 +97,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
+  ApiTtsRoute: typeof ApiTtsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -117,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tts': {
+      id: '/api/tts'
+      path: '/api/tts'
+      fullPath: '/api/tts'
+      preLoaderRoute: typeof ApiTtsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/chat/': {
@@ -164,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
+  ApiTtsRoute: ApiTtsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

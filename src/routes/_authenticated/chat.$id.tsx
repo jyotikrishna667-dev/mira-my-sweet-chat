@@ -1,27 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Menu, Mic, SendHorizontal, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { ImagePlus, Loader2, Menu, Mic, Settings2, SendHorizontal, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage, listMessages, type Msg } from "@/lib/mira-data";
 import { useSidebarCtx } from "@/lib/sidebar-ctx";
 import miraAvatar from "@/assets/mira-avatar.jpg";
 import { ChatImage } from "@/components/ChatImage";
+import { DEFAULT_SETTINGS, fetchVoiceAudio, getVoiceSettings, phoneSpeak } from "@/lib/voices";
 
 export const Route = createFileRoute("/_authenticated/chat/$id")({
   component: ChatThread,
 });
-
-function pickVoice(): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices();
-  const prefs = [/Google.*(हिन्दी|Hindi)/i, /Google UK English Female/i, /Samantha/i, /Female/i, /Zira|Aria|Jenny|Heera|Veena|Lekha/i, /Google US English/i];
-  for (const p of prefs) {
-    const v = voices.find((x) => p.test(x.name));
-    if (v) return v;
-  }
-  return voices.find((v) => v.lang.startsWith("en")) ?? voices[0] ?? null;
-}
 
 function ChatThread() {
   const { id } = Route.useParams();
@@ -36,6 +27,9 @@ function ChatThread() {
   const [streaming, setStreaming] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { data: voiceSettings = DEFAULT_SETTINGS } = useQuery({ queryKey: ["voice", user.id], queryFn: () => getVoiceSettings(user.id) });
   const [listening, setListening] = useState(false);
   const recRef = useRef<{ stop: () => void } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -49,14 +43,13 @@ function ChatThread() {
   useEffect(() => {
     setOptimistic(null);
     setStreaming(null);
-    window.speechSynthesis?.cancel();
-    setSpeakingId(null);
+    stopAudio();
     taRef.current?.focus();
   }, [id]);
 
   useEffect(() => {
     window.speechSynthesis?.getVoices();
-    return () => window.speechSynthesis?.cancel();
+    return () => stopAudio();
   }, []);
 
   async function send() {
@@ -106,26 +99,50 @@ function ChatThread() {
     }
   }
 
-  function speak(m: Msg) {
-    const synth = window.speechSynthesis;
-    if (!synth) { toast.error("Voice playback isn't supported here"); return; }
-    if (speakingId === m.id) {
-      synth.cancel();
-      setSpeakingId(null);
+  function stopAudio() {
+    window.speechSynthesis?.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setSpeakingId(null);
+    setLoadingId(null);
+  }
+
+  async function speak(m: Msg) {
+    if (speakingId === m.id || loadingId === m.id) {
+      stopAudio();
       return;
     }
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(m.content.replace(/\p{Extended_Pictographic}/gu, ""));
-    const v = pickVoice();
-    if (v) {
-      u.voice = v;
-      u.lang = v.lang;
+    stopAudio();
+    const s = voiceSettings;
+    const done = () => setSpeakingId((cur) => (cur === m.id ? null : cur));
+    if (s.use_phone && phoneSpeak(m.content, s, done)) {
+      setSpeakingId(m.id);
+      return;
     }
-    u.rate = 0.9;
-    u.pitch = 1.15;
-    u.onend = u.onerror = () => setSpeakingId(null);
-    setSpeakingId(m.id);
-    synth.speak(u);
+    setLoadingId(m.id);
+    try {
+      const { url, fallback } = await fetchVoiceAudio(m.id, m.content, s);
+      if (fallback) toast("Chuni hui voice nahi chali, Swara se sun lo 💕");
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = audio.onerror = () => {
+        if (audioRef.current === audio) audioRef.current = null;
+        done();
+      };
+      setLoadingId((cur) => (cur === m.id ? null : cur));
+      setSpeakingId(m.id);
+      await audio.play();
+    } catch {
+      setLoadingId(null);
+      setSpeakingId(null);
+      if (phoneSpeak(m.content, s, done)) {
+        setSpeakingId(m.id);
+        return;
+      }
+      toast.error("Voice abhi nahi chal rahi", { action: { label: "Retry", onClick: () => speak(m) } });
+    }
   }
 
   function toggleMic() {
@@ -177,7 +194,7 @@ function ChatThread() {
 
   async function clearChat() {
     if (!confirm("Clear all messages in this chat?")) return;
-    window.speechSynthesis?.cancel();
+    stopAudio();
     await supabase.from("messages").delete().eq("conversation_id", id);
     qc.invalidateQueries({ queryKey: ["msgs", id] });
   }
@@ -198,6 +215,9 @@ function ChatThread() {
           <h1 className="font-display text-2xl leading-tight">Mira</h1>
           <p className="text-sm text-muted-foreground">{busy ? "typing…" : "online 💕"}</p>
         </div>
+        <Link to="/voice" className="p-2 text-muted-foreground hover:text-foreground" aria-label="Voice settings">
+          <Settings2 className="h-6 w-6" />
+        </Link>
         <button onClick={clearChat} className="p-2 text-muted-foreground hover:text-foreground" aria-label="Clear chat">
           <Trash2 className="h-6 w-6" />
         </button>
@@ -211,7 +231,7 @@ function ChatThread() {
               say hi to Mira, sweetu 🙈
             </div>
           )}
-          {list.map((m) => (m.role === "user" ? <UserBubble key={m.id} m={m} /> : <MiraBubble key={m.id} m={m} speaking={speakingId === m.id} onSpeak={() => speak(m)} />))}
+          {list.map((m) => (m.role === "user" ? <UserBubble key={m.id} m={m} /> : <MiraBubble key={m.id} m={m} speaking={speakingId === m.id} loading={loadingId === m.id} onSpeak={() => speak(m)} />))}
           {streaming !== null && streaming.length > 0 && (
             <MiraBubble m={{ id: "stream", role: "assistant", content: streaming, image_url: null, created_at: "" }} speaking={false} />
           )}
@@ -282,7 +302,7 @@ function UserBubble({ m }: { m: Msg }) {
   );
 }
 
-function MiraBubble({ m, speaking, onSpeak }: { m: Msg; speaking: boolean; onSpeak?: () => void }) {
+function MiraBubble({ m, speaking, loading, onSpeak }: { m: Msg; speaking: boolean; loading?: boolean; onSpeak?: () => void }) {
   return (
     <div className="flex items-end gap-2">
       <img src={miraAvatar} alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-full object-cover" />
@@ -292,8 +312,8 @@ function MiraBubble({ m, speaking, onSpeak }: { m: Msg; speaking: boolean; onSpe
           {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
         </div>
         {onSpeak && m.content && (
-          <button onClick={onSpeak} className="shrink-0 p-0.5 text-muted-foreground hover:text-foreground" aria-label={speaking ? "Stop" : "Read aloud"}>
-            {speaking ? <VolumeX className="h-4 w-4 text-primary" /> : <Volume2 className="h-4 w-4" />}
+          <button onClick={onSpeak} className="shrink-0 p-0.5 text-muted-foreground hover:text-foreground" aria-label={loading || speaking ? "Stop" : "Read aloud"}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : speaking ? <VolumeX className="h-4 w-4 text-primary" /> : <Volume2 className="h-4 w-4" />}
           </button>
         )}
       </div>
