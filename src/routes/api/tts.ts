@@ -130,7 +130,7 @@ export const Route = createFileRoute("/api/tts")({
             return Response.json({ error: "Voice abhi nahi chal rahi" }, { status: 502 });
           }
         }
-        return new Response(audio, {
+        return new Response(audio as unknown as BodyInit, {
           headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store", "X-Voice-Fallback": fallback ? "1" : "0" },
         });
       },
