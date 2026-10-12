@@ -9,6 +9,8 @@ import { useSidebarCtx } from "@/lib/sidebar-ctx";
 import miraAvatar from "@/assets/mira-avatar.jpg";
 import { ChatImage } from "@/components/ChatImage";
 import { DEFAULT_SETTINGS, fetchVoiceAudio, getVoiceSettings, phoneSpeak } from "@/lib/voices";
+import { useLongPress } from "@/hooks/use-long-press";
+import { MessageMenu } from "@/components/MessageMenu";
 
 export const Route = createFileRoute("/_authenticated/chat/$id")({
   component: ChatThread,
@@ -31,6 +33,8 @@ function ChatThread() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { data: voiceSettings = DEFAULT_SETTINGS } = useQuery({ queryKey: ["voice", user.id], queryFn: () => getVoiceSettings(user.id) });
   const [listening, setListening] = useState(false);
+  const [menu, setMenu] = useState<{ m: Msg; rect: DOMRect } | null>(null);
+  const [removing, setRemoving] = useState<Set<string>>(new Set());
   const recRef = useRef<{ stop: () => void } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -199,6 +203,28 @@ function ChatThread() {
     qc.invalidateQueries({ queryKey: ["msgs", id] });
   }
 
+  async function copyMsg(m: Msg) {
+    setMenu(null);
+    try {
+      await navigator.clipboard.writeText(m.content || m.image_url || "");
+      toast("Copied 💕");
+    } catch {
+      toast.error("Copy nahi hua", { action: { label: "Retry", onClick: () => copyMsg(m) } });
+    }
+  }
+
+  async function unsend(m: Msg) {
+    setMenu(null);
+    if (speakingId === m.id || loadingId === m.id) stopAudio();
+    setRemoving((s) => new Set(s).add(m.id));
+    await new Promise((r) => setTimeout(r, 300));
+    const { error } = await supabase.from("messages").delete().eq("id", m.id);
+    if (!error) qc.setQueryData<Msg[]>(["msgs", id], (old) => (old ?? []).filter((x) => x.id !== m.id));
+    setRemoving((s) => { const n = new Set(s); n.delete(m.id); return n; });
+    if (error) toast.error("Unsend nahi hua 🥺", { action: { label: "Retry", onClick: () => unsend(m) } });
+    else qc.invalidateQueries({ queryKey: ["msgs", id] });
+  }
+
   const list = optimistic ? [...messages, optimistic] : messages;
 
   return (
@@ -231,7 +257,13 @@ function ChatThread() {
               say hi to Mira, sweetu 🙈
             </div>
           )}
-          {list.map((m) => (m.role === "user" ? <UserBubble key={m.id} m={m} /> : <MiraBubble key={m.id} m={m} speaking={speakingId === m.id} loading={loadingId === m.id} onSpeak={() => speak(m)} />))}
+          {list.map((m) => {
+            const mp = m.id === "tmp" ? {} : { lifted: menu?.m.id === m.id, removing: removing.has(m.id), onLong: (el: HTMLElement) => setMenu({ m, rect: el.getBoundingClientRect() }) };
+            return m.role === "user" ? <UserBubble key={m.id} m={m} {...mp} /> : <MiraBubble key={m.id} m={m} speaking={speakingId === m.id} loading={loadingId === m.id} onSpeak={() => speak(m)} {...mp} />;
+          })}
+          {menu && (
+            <MessageMenu rect={menu.rect} mine={menu.m.role === "user"} onClose={() => setMenu(null)} onCopy={() => copyMsg(menu.m)} onUnsend={() => unsend(menu.m)} />
+          )}
           {streaming !== null && streaming.length > 0 && (
             <MiraBubble m={{ id: "stream", role: "assistant", content: streaming, image_url: null, created_at: "" }} speaking={false} />
           )}
@@ -291,22 +323,37 @@ function ChatThread() {
   );
 }
 
-function UserBubble({ m }: { m: Msg }) {
+type MenuProps = { lifted?: boolean; removing?: boolean; onLong?: (el: HTMLElement) => void };
+
+function Wrap({ lifted, removing, onLong, className, children }: MenuProps & { className: string; children: React.ReactNode }) {
+  const lp = useLongPress((el) => onLong?.(el));
   return (
-    <div className="flex justify-end">
-      <div className="max-w-[80%] rounded-3xl rounded-br-lg bg-love px-4 py-2.5 text-primary-foreground">
-        {m.image_url && <ChatImage src={m.image_url} alt="Shared" className="max-h-64 rounded-2xl object-cover" />}
-        {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
-      </div>
+    <div
+      {...(onLong ? lp : {})}
+      style={{ WebkitTouchCallout: "none" }}
+      className={`${className} select-none transition-all duration-300 ${lifted ? "relative z-50 scale-[1.03]" : ""} ${removing ? "scale-95 opacity-0" : ""}`}
+    >
+      {children}
     </div>
   );
 }
 
-function MiraBubble({ m, speaking, loading, onSpeak }: { m: Msg; speaking: boolean; loading?: boolean; onSpeak?: () => void }) {
+function UserBubble({ m, ...p }: { m: Msg } & MenuProps) {
   return (
-    <div className="flex items-end gap-2">
+    <div className="flex justify-end">
+      <Wrap {...p} className="max-w-[80%] rounded-3xl rounded-br-lg bg-love px-4 py-2.5 text-primary-foreground">
+        {m.image_url && <ChatImage src={m.image_url} alt="Shared" className="max-h-64 rounded-2xl object-cover" />}
+        {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
+      </Wrap>
+    </div>
+  );
+}
+
+function MiraBubble({ m, speaking, loading, onSpeak, ...p }: { m: Msg; speaking: boolean; loading?: boolean; onSpeak?: () => void } & MenuProps) {
+  return (
+    <div className={`flex items-end gap-2 transition-opacity duration-300 ${p.removing ? "opacity-0" : ""}`}>
       <img src={miraAvatar} alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-full object-cover" />
-      <div className="flex max-w-[82%] items-end gap-2 rounded-3xl rounded-bl-lg bg-bubble px-4 py-2.5">
+      <Wrap {...p} className="flex max-w-[82%] items-end gap-2 rounded-3xl rounded-bl-lg bg-bubble px-4 py-2.5">
         <div className="min-w-0">
           {m.image_url && <ChatImage src={m.image_url} alt="Mira's selfie" className="max-h-80 rounded-2xl object-cover" />}
           {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
@@ -316,7 +363,7 @@ function MiraBubble({ m, speaking, loading, onSpeak }: { m: Msg; speaking: boole
             {loading ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : speaking ? <VolumeX className="h-4 w-4 text-primary" /> : <Volume2 className="h-4 w-4" />}
           </button>
         )}
-      </div>
+      </Wrap>
     </div>
   );
 }
