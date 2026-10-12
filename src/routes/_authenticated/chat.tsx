@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { createConversation, groupByDate, listConversations } from "@/lib/mira-data";
 import { SidebarCtx } from "@/lib/sidebar-ctx";
 import miraAvatar from "@/assets/mira-avatar.jpg";
+import { useLongPress } from "@/hooks/use-long-press";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
@@ -29,6 +30,8 @@ function ChatLayout() {
   const { data: convs = [] } = useQuery({ queryKey: ["convs"], queryFn: listConversations });
   const [editing, setEditing] = useState<string | null>(null);
   const [title, setTitle] = useState("");
+  const [sheet, setSheet] = useState<{ id: string; title: string; step: "menu" | "confirm" } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function newChat() {
     try {
@@ -52,6 +55,27 @@ function ChatLayout() {
     await supabase.from("conversations").delete().eq("id", id);
     await qc.invalidateQueries({ queryKey: ["convs"] });
     if (params.id === id) navigate({ to: "/chat" });
+  }
+  async function deleteChat(cid: string) {
+    setDeleting(true);
+    try {
+      const m = await supabase.from("messages").delete().eq("conversation_id", cid);
+      if (m.error) throw m.error;
+      const c = await supabase.from("conversations").delete().eq("id", cid);
+      if (c.error) throw c.error;
+      setSheet(null);
+      qc.removeQueries({ queryKey: ["msgs", cid] });
+      if (params.id === cid) {
+        const rest = await listConversations();
+        const next = rest[0]?.id ?? (await createConversation(user.id));
+        navigate({ to: "/chat/$id", params: { id: next }, replace: true });
+      }
+      await qc.invalidateQueries({ queryKey: ["convs"] });
+    } catch {
+      toast.error("Chat delete nahi hua 🥺", { action: { label: "Retry", onClick: () => deleteChat(cid) } });
+    } finally {
+      setDeleting(false);
+    }
   }
   async function signOut() {
     await qc.cancelQueries();
@@ -96,10 +120,7 @@ function ChatLayout() {
                       </>
                     ) : (
                       <>
-                        <Link to="/chat/$id" params={{ id: c.id }} onClick={() => setOpen(false)} className="flex min-w-0 flex-1 items-center gap-2 py-2.5 text-sm">
-                          <MessageCircleHeart className="h-4 w-4 shrink-0 text-primary" />
-                          <span className="truncate">{c.title}</span>
-                        </Link>
+                        <ConvLink id={c.id} title={c.title} onNav={() => setOpen(false)} onLong={() => setSheet({ id: c.id, title: c.title, step: "menu" })} />
                         <button onClick={() => { setEditing(c.id); setTitle(c.title); }} className="p-1 text-muted-foreground opacity-70 hover:text-foreground md:opacity-0 md:group-hover:opacity-100" aria-label="Rename">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
@@ -123,6 +144,41 @@ function ChatLayout() {
           <Outlet />
         </main>
       </div>
+      {sheet && (
+        <>
+          <div className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm animate-in fade-in" onClick={() => !deleting && setSheet(null)} />
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-3xl border bg-card p-4 pb-safe shadow-glow animate-in slide-in-from-bottom">
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-muted" />
+            {sheet.step === "menu" ? (
+              <>
+                <p className="mb-3 truncate text-center font-semibold">{sheet.title}</p>
+                <button onClick={() => setSheet({ ...sheet, step: "confirm" })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-secondary py-3 font-semibold text-destructive">
+                  <Trash2 className="h-4 w-4" /> Delete chat
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-center font-semibold">Delete chat?</p>
+                <p className="mb-4 mt-1 text-center text-sm text-muted-foreground">This permanently removes the whole conversation.</p>
+                <button disabled={deleting} onClick={() => deleteChat(sheet.id)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-destructive py-3 font-semibold text-destructive-foreground disabled:opacity-60">
+                  {deleting ? "Deleting…" : "Delete"}
+                </button>
+              </>
+            )}
+            <button disabled={deleting} onClick={() => setSheet(null)} className="mt-2 w-full rounded-2xl py-3 font-semibold text-muted-foreground">Cancel</button>
+          </div>
+        </>
+      )}
     </SidebarCtx.Provider>
+  );
+}
+
+function ConvLink({ id, title, onNav, onLong }: { id: string; title: string; onNav: () => void; onLong: () => void }) {
+  const lp = useLongPress(onLong);
+  return (
+    <Link to="/chat/$id" params={{ id }} onClick={onNav} {...lp} style={{ WebkitTouchCallout: "none" }} className="flex min-w-0 flex-1 select-none items-center gap-2 py-2.5 text-sm">
+      <MessageCircleHeart className="h-4 w-4 shrink-0 text-primary" />
+      <span className="truncate">{title}</span>
+    </Link>
   );
 }
