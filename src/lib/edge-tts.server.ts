@@ -68,7 +68,7 @@ export async function edgeSynthesize(text: string, voice: string, rate: string, 
       const ab: ArrayBuffer = d instanceof ArrayBuffer ? d : await (d as Blob).arrayBuffer();
       const u = new Uint8Array(ab);
       if (u.length < 2) return;
-      const hl = (u[0] << 8) | u[1];
+      const hl = ((u[0] ?? 0) << 8) | (u[1] ?? 0);
       const header = new TextDecoder().decode(u.subarray(2, 2 + hl));
       if (header.includes("Path:audio")) chunks.push(u.subarray(2 + hl));
     });
