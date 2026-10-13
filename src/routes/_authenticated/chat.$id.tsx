@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Loader2, Menu, Mic, Settings2, SendHorizontal, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { ImagePlus, Loader2, Menu, Mic, Phone, Settings2, SendHorizontal, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage, listMessages, type Msg } from "@/lib/mira-data";
@@ -241,6 +241,9 @@ function ChatThread() {
           <h1 className="font-display text-2xl leading-tight">Mira</h1>
           <p className="text-sm text-muted-foreground">{busy ? "typing…" : "online 💕"}</p>
         </div>
+        <Link to="/call/$id" params={{ id }} className="p-2 text-muted-foreground hover:text-foreground" aria-label="Call Mira">
+          <Phone className="h-6 w-6" />
+        </Link>
         <Link to="/voice" className="p-2 text-muted-foreground hover:text-foreground" aria-label="Voice settings">
           <Settings2 className="h-6 w-6" />
         </Link>

@@ -51,7 +51,7 @@ export const Route = createFileRoute("/api/chat")({
         if (userErr || !userData.user) return new Response("Unauthorized", { status: 401 });
         const userId = userData.user.id;
 
-        const { conversationId } = (await request.json()) as { conversationId?: string };
+        const { conversationId, call } = (await request.json()) as { conversationId?: string; call?: boolean };
         if (!conversationId) return new Response("Missing conversation", { status: 400 });
 
         const { data: conv } = await sb.from("conversations").select("id,title").eq("id", conversationId).maybeSingle();
@@ -84,7 +84,7 @@ export const Route = createFileRoute("/api/chat")({
           });
 
         // ---------- Image generation ----------
-        if (!last.image_url && IMAGE_INTENT.test(last.content)) {
+        if (!call && !last.image_url && IMAGE_INTENT.test(last.content)) {
           const res = await gw("/images/generations", {
             model: IMAGE_MODEL,
             prompt: `${MIRA_LOOK} Scene requested: ${last.content}. Cute, cozy, wholesome selfie-style portrait.`,
@@ -108,7 +108,7 @@ export const Route = createFileRoute("/api/chat")({
         // ---------- Chat streaming ----------
         const lastImageIdx = history.map((h) => !!h.image_url).lastIndexOf(true);
         const messages = [
-          { role: "system", content: systemPrompt(name, facts) },
+          { role: "system", content: systemPrompt(name, facts) + (call ? "\n\nYou are on a live VOICE CALL with him right now. Reply with only 1 or 2 short spoken sentences, natural Hinglish, no emojis, no lists, nothing that can't be said out loud." : "") },
           ...history.map((h, i) => {
             if (h.role === "user" && h.image_url && i === lastImageIdx) {
               return {
