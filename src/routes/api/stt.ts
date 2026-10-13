@@ -25,7 +25,7 @@ export const Route = createFileRoute("/api/stt")({
         if (!(file instanceof File) || !file.size || file.size > MAX_BYTES) {
           return Response.json({ message: "Awaaz clear nahi aayi 🥺" }, { status: 400 });
         }
-        const type = (file.type || "audio/webm").replace(/^video\//, "audio/").split(";")[0];
+        const type = (file.type || "audio/webm").replace(/^video\//, "audio/").split(";")[0] ?? "audio/webm";
         const ext = type.includes("mp4") || type.includes("m4a") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
         const up = new FormData();
         up.append("model", STT_MODEL);
