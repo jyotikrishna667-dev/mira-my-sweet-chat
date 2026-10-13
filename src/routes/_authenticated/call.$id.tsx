@@ -150,7 +150,7 @@ function CallScreen() {
       if (recRef.current !== rec) return;
       an.getFloatTimeDomainData(buf);
       let sum = 0;
-      for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+      for (let i = 0; i < buf.length; i++) { const v = buf[i] ?? 0; sum += v * v; }
       const rms = Math.sqrt(sum / buf.length);
       const now = performance.now();
       if (rms > SPEECH_RMS) {
