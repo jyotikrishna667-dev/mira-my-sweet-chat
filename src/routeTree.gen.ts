@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiNotifyLinesRouteImport } from './routes/api/notify-lines'
 import { Route as ApiSttRouteImport } from './routes/api/stt'
 import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as AuthenticatedCallIdRouteImport } from './routes/_authenticated/call.$id'
@@ -34,6 +36,12 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedVoiceRoute = AuthenticatedVoiceRouteImport.update({
   id: '/voice',
   path: '/voice',
@@ -42,6 +50,11 @@ const AuthenticatedVoiceRoute = AuthenticatedVoiceRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNotifyLinesRoute = ApiNotifyLinesRouteImport.update({
+  id: '/api/notify-lines',
+  path: '/api/notify-lines',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSttRoute = ApiSttRouteImport.update({
@@ -73,8 +86,10 @@ const AuthenticatedChatIdRoute = AuthenticatedChatIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/notify-lines': typeof ApiNotifyLinesRoute
   '/api/stt': typeof ApiSttRoute
   '/api/tts': typeof ApiTtsRoute
   '/call/$id': typeof AuthenticatedCallIdRoute
@@ -83,8 +98,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/notify-lines': typeof ApiNotifyLinesRoute
   '/api/stt': typeof ApiSttRoute
   '/api/tts': typeof ApiTtsRoute
   '/call/$id': typeof AuthenticatedCallIdRoute
@@ -96,8 +113,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/voice': typeof AuthenticatedVoiceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/notify-lines': typeof ApiNotifyLinesRoute
   '/api/stt': typeof ApiSttRoute
   '/api/tts': typeof ApiTtsRoute
   '/_authenticated/call/$id': typeof AuthenticatedCallIdRoute
@@ -109,8 +128,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/chat'
+    | '/notifications'
     | '/voice'
     | '/api/chat'
+    | '/api/notify-lines'
     | '/api/stt'
     | '/api/tts'
     | '/call/$id'
@@ -119,8 +140,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/notifications'
     | '/voice'
     | '/api/chat'
+    | '/api/notify-lines'
     | '/api/stt'
     | '/api/tts'
     | '/call/$id'
@@ -131,8 +154,10 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/_authenticated/chat'
+    | '/_authenticated/notifications'
     | '/_authenticated/voice'
     | '/api/chat'
+    | '/api/notify-lines'
     | '/api/stt'
     | '/api/tts'
     | '/_authenticated/call/$id'
@@ -144,6 +169,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
+  ApiNotifyLinesRoute: typeof ApiNotifyLinesRoute
   ApiSttRoute: typeof ApiSttRoute
   ApiTtsRoute: typeof ApiTtsRoute
 }
@@ -171,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/voice': {
       id: '/_authenticated/voice'
       path: '/voice'
@@ -183,6 +216,13 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notify-lines': {
+      id: '/api/notify-lines'
+      path: '/api/notify-lines'
+      fullPath: '/api/notify-lines'
+      preLoaderRoute: typeof ApiNotifyLinesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/stt': {
@@ -238,12 +278,14 @@ const AuthenticatedChatRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedVoiceRoute: typeof AuthenticatedVoiceRoute
   AuthenticatedCallIdRoute: typeof AuthenticatedCallIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedVoiceRoute: AuthenticatedVoiceRoute,
   AuthenticatedCallIdRoute: AuthenticatedCallIdRoute,
 }
@@ -255,6 +297,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
+  ApiNotifyLinesRoute: ApiNotifyLinesRoute,
   ApiSttRoute: ApiSttRoute,
   ApiTtsRoute: ApiTtsRoute,
 }
