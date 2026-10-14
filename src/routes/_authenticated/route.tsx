@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { MiraNotifier } from "@/components/MiraNotifier";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -8,5 +9,10 @@ export const Route = createFileRoute("/_authenticated")({
     if (!data.user) throw redirect({ to: "/" });
     return { user: data.user };
   },
-  component: () => <Outlet />,
+  component: () => (
+    <>
+      <MiraNotifier />
+      <Outlet />
+    </>
+  ),
 });

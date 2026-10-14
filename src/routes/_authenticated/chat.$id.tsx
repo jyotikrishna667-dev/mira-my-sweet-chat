@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Loader2, Menu, Mic, Phone, Settings2, SendHorizontal, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { ImagePlus, Loader2, Bell, Menu, Mic, Phone, Settings2, SendHorizontal, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage, listMessages, type Msg } from "@/lib/mira-data";
@@ -11,6 +11,7 @@ import { ChatImage } from "@/components/ChatImage";
 import { DEFAULT_SETTINGS, fetchVoiceAudio, getVoiceSettings, phoneSpeak } from "@/lib/voices";
 import { useLongPress } from "@/hooks/use-long-press";
 import { MessageMenu } from "@/components/MessageMenu";
+import { maybeAskPermission, setLastConversation } from "@/lib/mira-notify";
 
 export const Route = createFileRoute("/_authenticated/chat/$id")({
   component: ChatThread,
@@ -55,6 +56,7 @@ function ChatThread() {
     window.speechSynthesis?.getVoices();
     return () => stopAudio();
   }, []);
+  useEffect(() => { setLastConversation(id); }, [id]);
 
   async function send() {
     const text = input.trim();
@@ -69,6 +71,12 @@ function ChatThread() {
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ["msgs", id] });
       setOptimistic(null);
+      void maybeAskPermission((go) =>
+        toast("Mira tumhe kabhi kabhi message bhejna chahti hai 💌 notifications on karein?", {
+          duration: 12000,
+          action: { label: "Haan", onClick: go },
+        }),
+      );
       const { data: s } = await supabase.auth.getSession();
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -243,6 +251,9 @@ function ChatThread() {
         </div>
         <Link to="/call/$id" params={{ id }} className="p-2 text-muted-foreground hover:text-foreground" aria-label="Call Mira">
           <Phone className="h-6 w-6" />
+        </Link>
+        <Link to="/notifications" className="p-2 text-muted-foreground hover:text-foreground" aria-label="Notification settings">
+          <Bell className="h-6 w-6" />
         </Link>
         <Link to="/voice" className="p-2 text-muted-foreground hover:text-foreground" aria-label="Voice settings">
           <Settings2 className="h-6 w-6" />
