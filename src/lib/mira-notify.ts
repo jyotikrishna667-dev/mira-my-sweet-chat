@@ -151,7 +151,7 @@ export async function scheduleOnLeave() {
     await ensureChannel(LN);
     const times = planTimes(Date.now(), s);
     const lines = pickLines(times.length);
-    const list = times.map((t, i) => notif(ID_BASE + i, lines[i] ?? FALLBACK_LINES[rnd(0, FALLBACK_LINES.length - 1)], t));
+    const list = times.map((t, i) => notif(ID_BASE + i, lines[i] ?? FALLBACK_LINES[rnd(0, FALLBACK_LINES.length - 1)]!, t));
     if (!list.length) return;
     await LN.schedule({ notifications: list });
     write(K.sent, [...read<string[]>(K.sent, []), ...list.map((l) => l.body)].slice(-10));
